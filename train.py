@@ -54,8 +54,8 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
     for step, (inputs, labels) in enumerate(train_dataloader):
         data_time.update(time.time() - end)
 
-        inputs = inputs.cuda()
-        labels = labels.cuda()
+        inputs = inputs.cuda(params['gpu'][0])
+        labels = labels.cuda(params['gpu'][0])
         outputs = model(inputs)
         loss = criterion(outputs, labels)
 
@@ -102,8 +102,8 @@ def validation(model, val_dataloader, epoch, criterion, optimizer, writer):
     with torch.no_grad():
         for step, (inputs, labels) in enumerate(val_dataloader):
             data_time.update(time.time() - end)
-            inputs = inputs.cuda()
-            labels = labels.cuda()
+            inputs = inputs.cuda(params['gpu'][0])
+            labels = labels.cuda(params['gpu'][0])
             outputs = model(inputs)
             loss = criterion(outputs, labels)
 
@@ -171,7 +171,7 @@ def main():
     model = model.cuda(params['gpu'][0])
     model = nn.DataParallel(model, device_ids=params['gpu'])  # multi-Gpu
 
-    criterion = nn.CrossEntropyLoss().cuda()
+    criterion = nn.CrossEntropyLoss().cuda(params['gpu'][0])
     optimizer = optim.SGD(model.parameters(), lr=params['learning_rate'], momentum=params['momentum'], weight_decay=params['weight_decay'])
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=params['step'], gamma=0.1)
 
