@@ -70,27 +70,18 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
         optimizer.step()
         batch_time.update(time.time() - end)
         end = time.time()
-        if (step+1) % params['display'] == 0:
-            print('-------------------------------------------------------')
-            for param in optimizer.param_groups:
-                print('lr: ', param['lr'])
-            print_string = 'Epoch: [{0}][{1}/{2}]'.format(epoch, step+1, len(train_dataloader))
-            print(print_string)
-            print_string = 'data_time: {data_time:.3f}, batch time: {batch_time:.3f}'.format(
-                data_time=data_time.val,
-                batch_time=batch_time.val)
-            print(print_string)
-            print_string = 'loss: {loss:.5f}'.format(loss=losses.avg)
-            print(print_string)
-            print_string = 'Top-1 accuracy: {top1_acc:.2f}%, Top-5 accuracy: {top5_acc:.2f}%'.format(
-                top1_acc=top1.avg,
-                top5_acc=top5.avg)
-            print(print_string)
+
+        if (step + 1) % params['display'] == 0:
+            print('---Training----------------------------------------------------')
+            print(f'Epoch {epoch} [{step + 1}/{len(train_dataloader)}]  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
+
+    print(f'Training: Epoch {epoch} time: {data_time:.3f}  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
+
     writer.add_scalar('train_loss_epoch', losses.avg, epoch)
     writer.add_scalar('train_top1_acc_epoch', top1.avg, epoch)
     writer.add_scalar('train_top5_acc_epoch', top5.avg, epoch)
 
-def validation(model, val_dataloader, epoch, criterion, optimizer, writer):
+def validation(model, val_dataloader, epoch, criterion, writer):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -115,20 +106,12 @@ def validation(model, val_dataloader, epoch, criterion, optimizer, writer):
             top5.update(prec5.item(), inputs.size(0))
             batch_time.update(time.time() - end)
             end = time.time()
+
             if (step + 1) % params['display'] == 0:
-                print('----validation----')
-                print_string = 'Epoch: [{0}][{1}/{2}]'.format(epoch, step + 1, len(val_dataloader))
-                print(print_string)
-                print_string = 'data_time: {data_time:.3f}, batch time: {batch_time:.3f}'.format(
-                    data_time=data_time.val,
-                    batch_time=batch_time.val)
-                print(print_string)
-                print_string = 'loss: {loss:.5f}'.format(loss=losses.avg)
-                print(print_string)
-                print_string = 'Top-1 accuracy: {top1_acc:.2f}%, Top-5 accuracy: {top5_acc:.2f}%'.format(
-                    top1_acc=top1.avg,
-                    top5_acc=top5.avg)
-                print(print_string)
+                print('---Validation----------------------------------------------------')
+                print(f'Epoch {epoch} [{step + 1}/{len(val_dataloader)}]  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
+
+    print(f'Validation: Epoch {epoch} time: {data_time:.3f}  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
     writer.add_scalar('val_loss_epoch', losses.avg, epoch)
     writer.add_scalar('val_top1_acc_epoch', top1.avg, epoch)
     writer.add_scalar('val_top5_acc_epoch', top5.avg, epoch)
@@ -181,7 +164,7 @@ def main():
     for epoch in range(params['epoch_num']):
         train(model, train_dataloader, epoch, criterion, optimizer, writer)
         if epoch % 2== 0:
-            validation(model, val_dataloader, epoch, criterion, optimizer, writer)
+            validation(model, val_dataloader, epoch, criterion, writer)
         scheduler.step()
         if epoch % 1 == 0:
             checkpoint = os.path.join(model_save_dir,
