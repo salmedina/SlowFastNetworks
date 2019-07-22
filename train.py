@@ -81,6 +81,8 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
     writer.add_scalar('train_top1_acc_epoch', top1.avg, epoch)
     writer.add_scalar('train_top5_acc_epoch', top5.avg, epoch)
 
+    return top1.avg, top5.avg, losses.avg
+
 def validation(model, val_dataloader, epoch, criterion, writer):
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -115,6 +117,8 @@ def validation(model, val_dataloader, epoch, criterion, writer):
     writer.add_scalar('val_loss_epoch', losses.avg, epoch)
     writer.add_scalar('val_top1_acc_epoch', top1.avg, epoch)
     writer.add_scalar('val_top5_acc_epoch', top5.avg, epoch)
+
+    return top1.avg, top5.avg, losses.avg
 
 
 def main():
@@ -161,15 +165,36 @@ def main():
     model_save_dir = os.path.join(params['save_path'], cur_time)
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
+
+    best_loss = 1e6
+    best_valid = dict(top1_acc=0., top5_acc=0., epoch=0)
+    no_loss_decrease_count = 0
     for epoch in range(params['epoch_num']):
-        train(model, train_dataloader, epoch, criterion, optimizer, writer)
-        if epoch % 2== 0:
-            validation(model, val_dataloader, epoch, criterion, writer)
+        train_top1_acc, train_top5_acc, train_loss = train(model, train_dataloader, epoch, criterion, optimizer, writer)
+        if epoch % 2 == 0:
+            val_top1_acc, val_top5_acc, val_loss = validation(model, val_dataloader, epoch, criterion, writer)
+            if val_top1_acc > best_valid['top1_acc']:
+                best_valid['top1_acc'] = val_top1_acc
+                best_valid['top5_acc'] = val_top5_acc
+                best_valid['epoch'] = epoch
+
+        if train_loss < best_loss:
+            best_loss = train_loss
+            no_loss_decrease_count = 0
+        else:
+            no_loss_decrease_count += 1
+        if no_loss_decrease_count >= params['patience']:
+            print(f'Early stop on Epoch {epoch} with patience {params["patience"]}')
+            break
+
         scheduler.step()
+
         if epoch % 1 == 0:
             checkpoint = os.path.join(model_save_dir,
                                       "clip_len_" + str(params['clip_len']) + "frame_sample_rate_" +str(params['frame_sample_rate'])+ "_checkpoint_" + str(epoch) + ".pth.tar")
             torch.save(model.module.state_dict(), checkpoint)
+
+    print(f'Best Validated model was found on epoch {best_valid["epoch"]}:  Top1 acc: {best_valid["top1_acc"]}  Top5 acc: {best_valid["top5_acc"]}')
 
     writer.close
 
