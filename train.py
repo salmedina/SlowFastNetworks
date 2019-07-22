@@ -51,6 +51,7 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
 
     model.train()
     end = time.time()
+    print('---Training----------------------------------------------------')
     for step, (inputs, labels) in enumerate(train_dataloader):
         data_time.update(time.time() - end)
 
@@ -72,10 +73,9 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
         end = time.time()
 
         if (step + 1) % params['display'] == 0:
-            print('---Training----------------------------------------------------')
             print(f'Epoch {epoch} [{step + 1}/{len(train_dataloader)}]  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
 
-    print(f'Training: Epoch {epoch} time: {data_time:.3f}  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
+    print(f'Training: Epoch {epoch} loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
 
     writer.add_scalar('train_loss_epoch', losses.avg, epoch)
     writer.add_scalar('train_top1_acc_epoch', top1.avg, epoch)
@@ -90,6 +90,7 @@ def validation(model, val_dataloader, epoch, criterion, writer):
     model.eval()
 
     end = time.time()
+    print('---Validation----------------------------------------------------')
     with torch.no_grad():
         for step, (inputs, labels) in enumerate(val_dataloader):
             data_time.update(time.time() - end)
@@ -108,7 +109,6 @@ def validation(model, val_dataloader, epoch, criterion, writer):
             end = time.time()
 
             if (step + 1) % params['display'] == 0:
-                print('---Validation----------------------------------------------------')
                 print(f'Epoch {epoch} [{step + 1}/{len(val_dataloader)}]  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
 
     print(f'Validation: Epoch {epoch} time: {data_time:.3f}  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
