@@ -26,16 +26,24 @@ def main(args):
     with open(args.train_anno_path) as train_file:
         for line in train_file.readlines():
             video_rel_path, label_id = line.strip().split()
-            source_video_path = osp.join(args.source_dir, video_rel_path)
             target_video_path = osp.join(args.target_dir, 'training', video_rel_path)
+            if osp.exists(target_video_path):
+                continue
+            source_video_path = osp.join(args.source_dir, video_rel_path)
+            if not osp.exists(source_video_path):
+                print(f'Missing file: {source_video_path}')
             copy_func(source_video_path, target_video_path)
 
     # Copy the files for the testing files
-    with open(args.train_anno_path) as train_file:
-        for line in train_file.readlines():
+    with open(args.test_anno_path) as test_file:
+        for line in test_file.readlines():
             video_rel_path = line.strip()
-            source_video_path = osp.join(args.source_dir, video_rel_path)
             target_video_path = osp.join(args.target_dir, 'validation', video_rel_path)
+            if osp.exists(target_video_path):
+                continue
+            source_video_path = osp.join(args.source_dir, video_rel_path)
+            if not osp.exists(source_video_path):
+                print(f'Missing file: {source_video_path}')
             copy_func(source_video_path, target_video_path)
 
 
@@ -47,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_anno_path', type=str, help='Path to txt file with training annotations')
     parser.add_argument('--test_anno_path', type=str, help='Path to txt file with testing annotations')
     parser.add_argument('--mode', type=str, default='copy', help='Determines if file is moved or copied: copy, move')
-    parser.add_argument('--video_ext', type=str, default='.mp4', help='Video files extension')
+    parser.add_argument('--video_ext', type=str, default='.avi', help='Video files extension')
     args = parser.parse_args()
 
     main(args)
