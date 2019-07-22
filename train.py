@@ -178,14 +178,14 @@ def main():
                 best_valid['top5_acc'] = val_top5_acc
                 best_valid['epoch'] = epoch
 
-        if train_loss < best_loss:
-            best_loss = train_loss
-            no_loss_decrease_count = 0
-        else:
-            no_loss_decrease_count += 1
-        if no_loss_decrease_count >= params['patience']:
-            print(f'Early stop on Epoch {epoch} with patience {params["patience"]}')
-            break
+            if val_loss < best_loss:
+                best_loss = val_loss
+                no_loss_decrease_count = 0
+            else:
+                no_loss_decrease_count += 1
+            if no_loss_decrease_count >= params['patience']:
+                print(f'Early stop on Epoch {epoch} with patience {params["patience"]}')
+                break
 
         scheduler.step()
 

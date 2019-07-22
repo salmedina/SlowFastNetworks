@@ -18,4 +18,4 @@ params['log'] = 'log'
 params['save_path'] = 'UCF101'
 params['clip_len'] = 64
 params['frame_sample_rate'] = 1
-params['patience'] = 10
+params['patience'] = 5
