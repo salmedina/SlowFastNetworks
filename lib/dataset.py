@@ -37,7 +37,7 @@ class VideoDataset(Dataset):
         # loading and preprocessing. TODO move them to transform classes
         buffer = self.loadvideo(self.fnames[index])
 
-        while buffer.shape[0]<self.clip_len+2 :
+        while buffer.shape[0] < self.clip_len + 2:
             index = np.random.randint(self.__len__())
             buffer = self.loadvideo(self.fnames[index])
 
@@ -73,7 +73,7 @@ class VideoDataset(Dataset):
         start_idx = 0
         end_idx = frame_count-1
         frame_count_sample = frame_count // self.frame_sample_rate - 1
-        if frame_count>300:
+        if frame_count > 300:
             end_idx = np.random.randint(300, frame_count)
             start_idx = end_idx - 300
             frame_count_sample = 301 // self.frame_sample_rate - 1
@@ -143,6 +143,6 @@ if __name__ == '__main__':
 
     datapath = '/disk/data/UCF-101'
     train_dataloader = \
-        DataLoader( VideoDataset(datapath, mode='train'), batch_size=10, shuffle=True, num_workers=0)
+        DataLoader(VideoDataset(datapath, mode='train'), batch_size=10, shuffle=True, num_workers=0)
     for step, (buffer, label) in enumerate(train_dataloader):
         print("label: ", label)

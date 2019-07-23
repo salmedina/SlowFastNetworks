@@ -87,6 +87,8 @@ class SlowFast(nn.Module):
             block, 512, layers[3], stride=2, head_conv=3)
         self.dp = nn.Dropout(dropout)
         self.fc = nn.Linear(self.fast_inplanes+2048, class_num, bias=False)
+
+
     def forward(self, input):
         fast, lateral = self.FastPath(input[:, :, ::2, :, :])
         slow = self.SlowPath(input[:, :, ::16, :, :], lateral)
@@ -96,19 +98,18 @@ class SlowFast(nn.Module):
         return x
 
 
-
     def SlowPath(self, input, lateral):
         x = self.slow_conv1(input)
         x = self.slow_bn1(x)
         x = self.slow_relu(x)
         x = self.slow_maxpool(x)
-        x = torch.cat([x, lateral[0]],dim=1)
+        x = torch.cat([x, lateral[0]], dim=1)
         x = self.slow_res2(x)
-        x = torch.cat([x, lateral[1]],dim=1)
+        x = torch.cat([x, lateral[1]], dim=1)
         x = self.slow_res3(x)
-        x = torch.cat([x, lateral[2]],dim=1)
+        x = torch.cat([x, lateral[2]], dim=1)
         x = self.slow_res4(x)
-        x = torch.cat([x, lateral[3]],dim=1)
+        x = torch.cat([x, lateral[3]], dim=1)
         x = self.slow_res5(x)
         x = nn.AdaptiveAvgPool3d(1)(x)
         x = x.view(-1, x.size(1))
