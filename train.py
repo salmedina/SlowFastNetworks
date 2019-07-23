@@ -1,6 +1,8 @@
 import os
 import time
 import numpy as np
+from collections import defaultdict
+from sklearn.metrics import average_precision_score
 import torch
 from config import params
 from torch import nn, optim
@@ -9,6 +11,7 @@ import torch.backends.cudnn as cudnn
 from lib.dataset import VideoDataset
 from lib import slowfastnet
 from tensorboardX import SummaryWriter
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -49,19 +52,32 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
     top1 = AverageMeter()
     top5 = AverageMeter()
 
+    ys = np.zeros(len(train_dataloader.dataset))
+    ys_ = np.zeros((len(train_dataloader.dataset), params['num_classes']))
+    count = 0
+
     model.train()
     end = time.time()
     print('---Training----------------------------------------------------')
     for step, (inputs, labels) in enumerate(train_dataloader):
         data_time.update(time.time() - end)
 
+        bz = inputs.size()[0]
+        ys[count:count + bz] = labels.data.numpy().squeeze()
+
         inputs = inputs.cuda(params['gpu'][0])
         labels = labels.cuda(params['gpu'][0])
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
+        logits = model(inputs)
+        loss = criterion(logits, labels)
+
+        # Requirements for mAP
+        _, preds = torch.max(logits, 1)
+        probs = torch.softmax(logits.squeeze(), dim=-1)
+        ys_[count:count + bz] = probs.data.cpu().numpy().squeeze()
+        count += bz
 
         # measure accuracy and record loss
-        prec1, prec5 = accuracy(outputs.data, labels, topk=(1, 5))
+        prec1, prec5 = accuracy(logits.data, labels, topk=(1, 5))
         losses.update(loss.item(), inputs.size(0))
         top1.update(prec1.item(), inputs.size(0))
         top5.update(prec5.item(), inputs.size(0))
@@ -74,6 +90,21 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
 
         if (step + 1) % params['display'] == 0:
             print(f'Epoch {epoch} [{step + 1}/{len(train_dataloader)}]  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
+
+    ys = ys[:count].astype(int)
+    ys_ = ys_[:count]
+    ll = np.squeeze(np.eye(params['num_classes'])[ys.reshape(-1)])
+    ap_acc = 0
+    class_ap = []
+    for class_idx in range(params['num_classes'] - 1):
+        y_pred = ys_[:, class_idx]
+        y_true = ll[:, class_idx]
+        ap = average_precision_score(y_true, y_pred)
+        class_ap.append(ap)
+        ap_acc += ap
+    train_map = ap_acc / (params['num_classes'] - 1)
+    print(f'Class AP:\n{class_ap}')
+    print(f'Training mAP: {train_map}    samples: {count}')
 
     print(f'Training: Epoch {epoch} loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
 
