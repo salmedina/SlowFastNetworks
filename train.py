@@ -103,10 +103,10 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
         class_ap.append(ap)
         ap_acc += ap
     train_map = ap_acc / (params['num_classes'] - 1)
-    print(f'Class AP:\n{class_ap}')
-    print(f'Training mAP: {train_map}    samples: {count}')
 
     print(f'Training: Epoch {epoch} loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
+    print(f'Class AP:\n{class_ap}')
+    print(f'Training mAP: {train_map}    samples: {count}')
 
     writer.add_scalar('train_loss_epoch', losses.avg, epoch)
     writer.add_scalar('train_top1_acc_epoch', top1.avg, epoch)
@@ -122,19 +122,33 @@ def validation(model, val_dataloader, epoch, criterion, writer):
     top5 = AverageMeter()
     model.eval()
 
+    ys = np.zeros(len(val_dataloader.dataset))
+    ys_ = np.zeros((len(val_dataloader.dataset), params['num_classes']))
+    count = 0
+
     end = time.time()
     print('---Validation----------------------------------------------------')
     with torch.no_grad():
         for step, (inputs, labels) in enumerate(val_dataloader):
             data_time.update(time.time() - end)
+
+            bz = inputs.size()[0]
+            ys[count:count + bz] = labels.data.numpy().squeeze()
+
             inputs = inputs.cuda(params['gpu'][0])
             labels = labels.cuda(params['gpu'][0])
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
+            logits = model(inputs)
+            loss = criterion(logits, labels)
+
+            # Requirements for mAP
+            _, preds = torch.max(logits, 1)
+            probs = torch.softmax(logits.squeeze(), dim=-1)
+            ys_[count:count + bz] = probs.data.cpu().numpy().squeeze()
+            count += bz
 
             # measure accuracy and record loss
 
-            prec1, prec5 = accuracy(outputs.data, labels, topk=(1, 5))
+            prec1, prec5 = accuracy(logits.data, labels, topk=(1, 5))
             losses.update(loss.item(), inputs.size(0))
             top1.update(prec1.item(), inputs.size(0))
             top5.update(prec5.item(), inputs.size(0))
@@ -144,7 +158,23 @@ def validation(model, val_dataloader, epoch, criterion, writer):
             if (step + 1) % params['display'] == 0:
                 print(f'Epoch {epoch} [{step + 1}/{len(val_dataloader)}]  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
 
+    ys = ys[:count].astype(int)
+    ys_ = ys_[:count]
+    ll = np.squeeze(np.eye(params['num_classes'])[ys.reshape(-1)])
+    ap_acc = 0
+    class_ap = []
+    for class_idx in range(params['num_classes'] - 1):
+        y_pred = ys_[:, class_idx]
+        y_true = ll[:, class_idx]
+        ap = average_precision_score(y_true, y_pred)
+        class_ap.append(ap)
+        ap_acc += ap
+    train_map = ap_acc / (params['num_classes'] - 1)
+
     print(f'Validation: Epoch {epoch}  loss: {losses.avg:.05f}  Top-1 acc: {top1.avg:.02f}  Top-5 acc: {top5.avg:.02f}')
+    print(f'Class AP:\n{class_ap}')
+    print(f'Validation mAP: {train_map}  samples: {count}')
+
     writer.add_scalar('val_loss_epoch', losses.avg, epoch)
     writer.add_scalar('val_top1_acc_epoch', top1.avg, epoch)
     writer.add_scalar('val_top5_acc_epoch', top5.avg, epoch)
