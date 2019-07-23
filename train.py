@@ -113,10 +113,7 @@ def validation(model, val_dataloader, epoch, criterion, writer):
             if (step + 1) % params['display'] == 0:
                 print(f'Epoch {epoch} [{step + 1}/{len(val_dataloader)}]  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
 
-    print(f'Validation: Epoch {epoch}')
-    print(f'loss: {losses.avg:.05f}')
-    print(f'Top-1 acc: {top1.avg:.02f}')
-    print(f'Top-5 acc: {top5.avg:.02f}')
+    print(f'Validation: Epoch {epoch}  loss: {losses.avg:.05f}  Top-1 acc: {top1.avg:.02f}  Top-5 acc: {top5.avg:.02f}')
     writer.add_scalar('val_loss_epoch', losses.avg, epoch)
     writer.add_scalar('val_top1_acc_epoch', top1.avg, epoch)
     writer.add_scalar('val_top5_acc_epoch', top5.avg, epoch)
