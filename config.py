@@ -14,6 +14,7 @@ def parse_opts():
     parser.add_argument('--momentum', dest='momentum', default=0.9, type=float, help='Momentum used while training')
     parser.add_argument('--wd', dest='weight_decay', default=1e-4, type=float, help='Weight decay while training')
     parser.add_argument('--display', dest='display', default=10, type=int, help='Frequency with which training is displayed')
+    parser.add_argument('--val_freq', dest='val_freq', default=5, type=int, help='Validation frequency in epochs')
     parser.add_argument('--finetune', dest='finetune', default=False, type=bool, help='Finetune mode enabled')
     parser.add_argument('--pretrained', dest='pretrained', default=None, type=str, help='Path to pretrained model')
     parser.add_argument('--gpu_id', dest='gpu', default=0, type=str, help='List of gpu ids to be used')
@@ -23,7 +24,10 @@ def parse_opts():
     parser.add_argument('--fsr', dest='frame_sample_rate', default=1, type=int, help='Frame sample rate to generate clips')
     parser.add_argument('--patience', dest='patience', default=10, type=int, help='Patience for early stopping')
 
+    parser.add_argument('--num_exp', dest='num_experiments', default=None, type=int, help='Number of experiments')
+    parser.add_argument('--exp_log', dest='exp_log', default=None, type=str, help='Path to save experiments logs')
+
+
     args = parser.parse_args()
     args.gpu = [int(gpu_id) for gpu_id in args.gpu.split(',')]
     return args
-

@@ -12,10 +12,8 @@ from lib import slowfastnet
 from tensorboardX import SummaryWriter
 from config import parse_opts
 
+# TODO: remove from being global
 params = parse_opts()
-print(type(params.gpu))
-print(params.gpu)
-print(params.gpu[0])
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -111,6 +109,7 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
     print(f'Training: Epoch {epoch} loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
     print(f'Class AP:\n{class_ap}')
     print(f'Training mAP: {train_map}    samples: {count}')
+    write_exp_log(f'[{epoch}] Training mAP: {train_map}    samples: {count}')
 
     writer.add_scalar('train_loss_epoch', losses.avg, epoch)
     writer.add_scalar('train_top1_acc_epoch', top1.avg, epoch)
@@ -178,6 +177,7 @@ def validation(model, val_dataloader, epoch, criterion, writer):
     print(f'Validation: Epoch {epoch}  loss: {losses.avg:.05f}  Top-1 acc: {top1.avg:.02f}  Top-5 acc: {top5.avg:.02f}')
     print(f'Class AP:\n{class_ap}')
     print(f'Validation mAP: {train_map}  samples: {count}')
+    write_exp_log(f'[{epoch}] Validation mAP: {train_map}  samples: {count}')
 
     writer.add_scalar('val_loss_epoch', losses.avg, epoch)
     writer.add_scalar('val_top1_acc_epoch', top1.avg, epoch)
@@ -236,7 +236,7 @@ def main():
     no_loss_decrease_count = 0
     for epoch in range(params.epoch_num):
         train_top1_acc, train_top5_acc, train_loss = train(model, train_dataloader, epoch, criterion, optimizer, writer)
-        if epoch % 2 == 0:
+        if epoch+1 % params.val_freq == 0:
             val_top1_acc, val_top5_acc, val_loss = validation(model, val_dataloader, epoch, criterion, writer)
             if val_top1_acc > best_valid['top1_acc']:
                 best_valid['top1_acc'] = val_top1_acc
@@ -261,7 +261,47 @@ def main():
 
     print(f'Best Validated model was found on epoch {best_valid["epoch"]}:  Top1 acc: {best_valid["top1_acc"]}  Top5 acc: {best_valid["top5_acc"]}')
 
-    writer.close
+    writer.close()
+
+def get_experiment_idx(trackbook_path):
+    return 0 if not os.path.exists(trackbook_path) else int(open(trackbook_path, 'r').readline())
+
+
+def inc_experiment_idx(trackbook_path):
+    next_idx = 1
+    if os.path.exists(trackbook_path):
+        next_idx = get_experiment_idx(trackbook_path) + 1
+    open(trackbook_path, 'w').write(str(next_idx))
+
+
+def load_experiment_params(exp_params_path):
+    exp_params = np.load(exp_params_path)
+
+
+def print_experiment_params(exp_id, exp_params):
+    print(f'Experiment {exp_id}:')
+    print(f'lr:   {exp_params.learning_rate:%02f}')
+    print(f'm:    {exp_params.momentum:%02f}')
+    print(f'wd:   {exp_params.weight_decay:%02f}')
+
+
+def write_exp_log(msg):
+    if params.exp_log is not None:
+        with open(params.exp_log, 'a+') as exp_log:
+            exp_log.write(f'{msg}\n')
+
 
 if __name__ == '__main__':
-    main()
+    if params.num_experiments is None:
+        main()
+    else:
+        trackbook_path = 'trackbook.txt'
+        exp_params = load_experiment_params('exp_params.npy')
+        exp_id = get_experiment_idx(trackbook_path)
+
+        while exp_id < params.num_experiments:
+            params.learning_rate, params.momentum, params.weight_decay = exp_params[exp_id]
+            print_experiment_params(exp_id, params)
+            params.exp_log = f'output/experiments_{exp_id:%02d}.log'
+            main()
+            inc_experiment_idx(trackbook_path)
