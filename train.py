@@ -302,6 +302,6 @@ if __name__ == '__main__':
         while exp_id < params.num_experiments:
             params.learning_rate, params.momentum, params.weight_decay = exp_params[exp_id]
             print_experiment_params(exp_id, params)
-            params.exp_log = f'output/experiments/{exp_id:%02d}.log'
+            params.exp_log = f'output/experiments/{exp_id:02d}.log'
             main()
             inc_experiment_idx(trackbook_path)
