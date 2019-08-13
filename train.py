@@ -273,6 +273,7 @@ def inc_experiment_idx(trackbook_path):
     if os.path.exists(trackbook_path):
         next_idx = get_experiment_idx(trackbook_path) + 1
     open(trackbook_path, 'w').write(str(next_idx))
+    return next_idx
 
 
 def load_experiment_params(exp_params_path):
@@ -310,4 +311,4 @@ if __name__ == '__main__':
                 print(f'Experiment {exp_id} failed!')
                 with open('output/experiments/failed.log', 'a+') as fail_log:
                     fail_log.write(f'{exp_id}\n')
-            inc_experiment_idx(trackbook_path)
+            exp_id = inc_experiment_idx(trackbook_path)
