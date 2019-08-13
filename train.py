@@ -4,14 +4,15 @@ import numpy as np
 from collections import defaultdict
 from sklearn.metrics import average_precision_score
 import torch
-from config import params
 from torch import nn, optim
 from torch.utils.data import DataLoader
 import torch.backends.cudnn as cudnn
 from lib.dataset import VideoDataset
 from lib import slowfastnet
 from tensorboardX import SummaryWriter
+from config import parse_opts
 
+params = parse_opts()
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -53,7 +54,7 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
     top5 = AverageMeter()
 
     ys = np.zeros(len(train_dataloader.dataset))
-    ys_ = np.zeros((len(train_dataloader.dataset), params['num_classes']))
+    ys_ = np.zeros((len(train_dataloader.dataset), params.num_classes))
     count = 0
 
     model.train()
@@ -65,8 +66,8 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
         bz = inputs.size()[0]
         ys[count:count + bz] = labels.data.numpy().squeeze()
 
-        inputs = inputs.cuda(params['gpu'][0])
-        labels = labels.cuda(params['gpu'][0])
+        inputs = inputs.cuda(params.gpu[0])
+        labels = labels.cuda(params.gpu[0])
         logits = model(inputs)
         loss = criterion(logits, labels)
 
@@ -88,21 +89,21 @@ def train(model, train_dataloader, epoch, criterion, optimizer, writer):
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if (step + 1) % params['display'] == 0:
+        if (step + 1) % params.display == 0:
             print(f'Epoch {epoch} [{step + 1}/{len(train_dataloader)}]  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
 
     ys = ys[:count].astype(int)
     ys_ = ys_[:count]
-    ll = np.squeeze(np.eye(params['num_classes'])[ys.reshape(-1)])
+    ll = np.squeeze(np.eye(params.num_classes)[ys.reshape(-1)])
     ap_acc = 0
     class_ap = []
-    for class_idx in range(params['num_classes'] - 1):
+    for class_idx in range(params.num_classes - 1):
         y_pred = ys_[:, class_idx]
         y_true = ll[:, class_idx]
         ap = average_precision_score(y_true, y_pred)
         class_ap.append(ap)
         ap_acc += ap
-    train_map = ap_acc / (params['num_classes'] - 1)
+    train_map = ap_acc / (params.num_classes - 1)
 
     print(f'Training: Epoch {epoch} loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
     print(f'Class AP:\n{class_ap}')
@@ -123,7 +124,7 @@ def validation(model, val_dataloader, epoch, criterion, writer):
     model.eval()
 
     ys = np.zeros(len(val_dataloader.dataset))
-    ys_ = np.zeros((len(val_dataloader.dataset), params['num_classes']))
+    ys_ = np.zeros((len(val_dataloader.dataset), params.num_classes))
     count = 0
 
     end = time.time()
@@ -135,8 +136,8 @@ def validation(model, val_dataloader, epoch, criterion, writer):
             bz = inputs.size()[0]
             ys[count:count + bz] = labels.data.numpy().squeeze()
 
-            inputs = inputs.cuda(params['gpu'][0])
-            labels = labels.cuda(params['gpu'][0])
+            inputs = inputs.cuda(params.gpu[0])
+            labels = labels.cuda(params.gpu[0])
             logits = model(inputs)
             loss = criterion(logits, labels)
 
@@ -155,21 +156,21 @@ def validation(model, val_dataloader, epoch, criterion, writer):
             batch_time.update(time.time() - end)
             end = time.time()
 
-            if (step + 1) % params['display'] == 0:
+            if (step + 1) % params.display == 0:
                 print(f'Epoch {epoch} [{step + 1}/{len(val_dataloader)}]  loss: {losses.avg:.5f}  Top-1 acc: {top1.avg:.2f}  Top-5 acc: {top5.avg:.2f}')
 
     ys = ys[:count].astype(int)
     ys_ = ys_[:count]
-    ll = np.squeeze(np.eye(params['num_classes'])[ys.reshape(-1)])
+    ll = np.squeeze(np.eye(params.num_classes)[ys.reshape(-1)])
     ap_acc = 0
     class_ap = []
-    for class_idx in range(params['num_classes'] - 1):
+    for class_idx in range(params.num_classes - 1):
         y_pred = ys_[:, class_idx]
         y_true = ll[:, class_idx]
         ap = average_precision_score(y_true, y_pred)
         class_ap.append(ap)
         ap_acc += ap
-    train_map = ap_acc / (params['num_classes'] - 1)
+    train_map = ap_acc / (params.num_classes - 1)
 
     print(f'Validation: Epoch {epoch}  loss: {losses.avg:.05f}  Top-1 acc: {top1.avg:.02f}  Top-5 acc: {top5.avg:.02f}')
     print(f'Class AP:\n{class_ap}')
@@ -185,7 +186,7 @@ def validation(model, val_dataloader, epoch, criterion, writer):
 def main():
     cudnn.benchmark = False
     cur_time = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
-    logdir = os.path.join(params['log'], cur_time)
+    logdir = os.path.join(params.log, cur_time)
     if not os.path.exists(logdir):
         os.makedirs(logdir)
 
@@ -194,19 +195,19 @@ def main():
     print("Loading dataset")
     train_dataloader = \
         DataLoader(
-            VideoDataset(params['dataset'], mode='train', clip_len=params['clip_len'], frame_sample_rate=params['frame_sample_rate']),
-            batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'])
+            VideoDataset(params.dataset, mode='train', clip_len=params.clip_len, frame_sample_rate=params.frame_sample_rate),
+            batch_size=params.batch_size, shuffle=True, num_workers=params.num_workers)
 
     val_dataloader = \
         DataLoader(
-            VideoDataset(params['dataset'], mode='validation', clip_len=params['clip_len'], frame_sample_rate=params['frame_sample_rate']),
-            batch_size=params['batch_size'], shuffle=False, num_workers=params['num_workers'])
+            VideoDataset(params.dataset, mode='validation', clip_len=params.clip_len, frame_sample_rate=params.frame_sample_rate),
+            batch_size=params.batch_size, shuffle=False, num_workers=params.num_workers)
 
     print("load model")
-    model = slowfastnet.resnet50(class_num=params['num_classes'])
+    model = slowfastnet.resnet50(class_num=params.num_classes)
     
-    if params['pretrained'] is not None:
-        pretrained_dict = torch.load(params['pretrained'], map_location='cpu')
+    if params.pretrained is not None:
+        pretrained_dict = torch.load(params.pretrained, map_location='cpu')
         try:
             model_dict = model.module.state_dict()
         except AttributeError:
@@ -216,21 +217,21 @@ def main():
         model_dict.update(pretrained_dict)
         model.load_state_dict(model_dict)
     
-    model = model.cuda(params['gpu'][0])
-    model = nn.DataParallel(model, device_ids=params['gpu'])  # multi-Gpu
+    model = model.cuda(params.gpu[0])
+    model = nn.DataParallel(model, device_ids=params.gpu)  # multi-Gpu
 
-    criterion = nn.CrossEntropyLoss().cuda(params['gpu'][0])
-    optimizer = optim.SGD(model.parameters(), lr=params['learning_rate'], momentum=params['momentum'], weight_decay=params['weight_decay'])
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=params['step'], gamma=0.1)
+    criterion = nn.CrossEntropyLoss().cuda(params.gpu[0])
+    optimizer = optim.SGD(model.parameters(), lr=params.learning_rate, momentum=params.momentum, weight_decay=params.weight_decay)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=params.step, gamma=0.1)
 
-    model_save_dir = os.path.join(params['save_path'], cur_time)
+    model_save_dir = os.path.join(params.save_path, cur_time)
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
     best_loss = 1e6
     best_valid = dict(top1_acc=0., top5_acc=0., epoch=0)
     no_loss_decrease_count = 0
-    for epoch in range(params['epoch_num']):
+    for epoch in range(params.epoch_num):
         train_top1_acc, train_top5_acc, train_loss = train(model, train_dataloader, epoch, criterion, optimizer, writer)
         if epoch % 2 == 0:
             val_top1_acc, val_top5_acc, val_loss = validation(model, val_dataloader, epoch, criterion, writer)
@@ -244,15 +245,15 @@ def main():
                 no_loss_decrease_count = 0
             else:
                 no_loss_decrease_count += 1
-            if no_loss_decrease_count >= params['patience']:
-                print(f'Early stop on Epoch {epoch} with patience {params["patience"]}')
+            if no_loss_decrease_count >= params.patience:
+                print(f'Early stop on Epoch {epoch} with patience {params.patience}')
                 break
 
         scheduler.step()
 
         if epoch % 1 == 0:
             checkpoint = os.path.join(model_save_dir,
-                                      "clip_len_" + str(params['clip_len']) + "frame_sample_rate_" +str(params['frame_sample_rate'])+ "_checkpoint_" + str(epoch) + ".pth.tar")
+                                      "clip_len_" + str(params.clip_len) + "frame_sample_rate_" +str(params.frame_sample_rate) + "_checkpoint_" + str(epoch) + ".pth.tar")
             torch.save(model.module.state_dict(), checkpoint)
 
     print(f'Best Validated model was found on epoch {best_valid["epoch"]}:  Top1 acc: {best_valid["top1_acc"]}  Top5 acc: {best_valid["top5_acc"]}')

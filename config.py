@@ -1,21 +1,27 @@
-params = dict()
+import argparse
 
-params['num_classes'] = 20
+def parse_opts():
+    parser = argparse.ArgumentParser()
 
-params['dataset'] = '../../Data/VIRAT/slowfast_clips'
+    parser.add_argument('--num_classes', dest='num_classes', type=int, required=True, help='Number of classes in the dataset')
+    parser.add_argument('--dataset_path', dest='dataset', type=str, required=True, help='Path to the dataset, follows UCF-101 folder structure')
 
-params['epoch_num'] = 40
-params['batch_size'] = 32 
-params['step'] = 10
-params['num_workers'] = 8
-params['learning_rate'] = 1e-2
-params['momentum'] = 0.9
-params['weight_decay'] = 1e-5
-params['display'] = 10
-params['pretrained'] = None
-params['gpu'] = [1]
-params['log'] = 'log'
-params['save_path'] = 'VIRAT'
-params['clip_len'] = 64
-params['frame_sample_rate'] = 1
-params['patience'] = 5
+    parser.add_argument('--epoch_num', dest='epoch_num', default=40, type=int, help='Max number of epochs')
+    parser.add_argument('--batch_size', dest='batch_size', default=32, type=int, help='Size of the mini-batch')
+    parser.add_argument('--step', dest='step', default=10, type=int, help='Video frame sampling steps')
+    parser.add_argument('--num_workers', dest='num_workers', default=8, type=int, help='Number of workers for processing data')
+    parser.add_argument('--lr', dest='learning_rate', default=1e-2, type=float, help='Learning rate for training')
+    parser.add_argument('--momentum', dest='momentum', default=0.9, type=float, help='Momentum used while training')
+    parser.add_argument('--wd', dest='weight_decay', default=1e-4, type=float, help='Weight decay while training')
+    parser.add_argument('--display', asdaddest='display', default=10, type=int, help='Frequency with which training is displayed')
+    parser.add_argument('--finetune', dest='finetune', default=False, type=bool, help='Finetune mode enabled')
+    parser.add_argument('--pretrained', dest='pretrained', default='', type=str, help='Path to pretrained model')
+    parser.add_argument('--gpu_id', dest='gpu', default=[0], type=list, help='List of gpu ids to be used')
+    parser.add_argument('--log_path', dest='log', default='log', type=str, help='Path where the logs will be saved')
+    parser.add_argument('--save_path', dest='save_path', default='output', type=str, help='Path where the checkpoints will be saved')
+    parser.add_argument('--clip_len', dest='clip_len', default=64, type=int, help='Number of frames to be sampled per clip')
+    parser.add_argument('--fsr', dest='frame_sample_rate', default=1, type=int, help='Frame sample rate to generate clips')
+    parser.add_argument('--patience', dest='patience', default=10, type=int, help='Patience for early stopping')
+
+    return parser.parse_args()
+
