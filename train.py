@@ -243,14 +243,15 @@ def main():
                 best_valid['top5_acc'] = val_top5_acc
                 best_valid['epoch'] = epoch
 
-            if val_loss < best_loss:
-                best_loss = val_loss
-                no_loss_decrease_count = 0
-            else:
-                no_loss_decrease_count += 1
-            if no_loss_decrease_count >= params.patience:
-                print(f'Early stop on Epoch {epoch} with patience {params.patience}')
-                break
+        if train_loss < best_loss:
+            best_loss = train_loss
+            no_loss_decrease_count = 0
+        else:
+            no_loss_decrease_count += 1
+        if no_loss_decrease_count >= params.patience:
+            print(f'Early stop on Epoch {epoch} with patience {params.patience}')
+            write_exp_log(f'[{epoch}] Early stop')
+            break
 
         scheduler.step()
 
@@ -303,5 +304,9 @@ if __name__ == '__main__':
             params.learning_rate, params.momentum, params.weight_decay = exp_params[exp_id]
             print_experiment_params(exp_id, params)
             params.exp_log = f'output/experiments/{exp_id:02d}.log'
-            main()
+            try:
+                main()
+            except ValueError:
+                with open('output/experiments/failed.log', 'a+') as fail_log:
+                    fail_log.write(f'{exp_id}\n')
             inc_experiment_idx(trackbook_path)
