@@ -13,6 +13,9 @@ from tensorboardX import SummaryWriter
 from config import parse_opts
 
 params = parse_opts()
+print(type(params.gpu))
+print(params.gpu)
+print(params.gpu[0])
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
