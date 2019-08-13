@@ -280,9 +280,9 @@ def load_experiment_params(exp_params_path):
 
 def print_experiment_params(exp_id, exp_params):
     print(f'Experiment {exp_id}:')
-    print(f'lr:   {exp_params.learning_rate:%02f}')
-    print(f'm:    {exp_params.momentum:%02f}')
-    print(f'wd:   {exp_params.weight_decay:%02f}')
+    print(f'lr:   {exp_params.learning_rate:%.8f}')
+    print(f'm:    {exp_params.momentum:%.8f}')
+    print(f'wd:   {exp_params.weight_decay:%.8f}')
 
 
 def write_exp_log(msg):
