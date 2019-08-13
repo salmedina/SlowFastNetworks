@@ -307,6 +307,7 @@ if __name__ == '__main__':
             try:
                 main()
             except ValueError:
+                print(f'Experiment {exp_id} failed!')
                 with open('output/experiments/failed.log', 'a+') as fail_log:
                     fail_log.write(f'{exp_id}\n')
             inc_experiment_idx(trackbook_path)
