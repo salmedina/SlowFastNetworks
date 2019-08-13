@@ -24,6 +24,6 @@ def parse_opts():
     parser.add_argument('--patience', dest='patience', default=10, type=int, help='Patience for early stopping')
 
     args = parser.parse_args()
-    args.gpu = [int(gpu_id) for gpu_id in args.gpu.split(',')
+    args.gpu = [int(gpu_id) for gpu_id in args.gpu.split(',')]
     return args
 
