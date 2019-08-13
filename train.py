@@ -275,7 +275,7 @@ def inc_experiment_idx(trackbook_path):
 
 
 def load_experiment_params(exp_params_path):
-    exp_params = np.load(exp_params_path)
+    return np.load(exp_params_path)
 
 
 def print_experiment_params(exp_id, exp_params):
