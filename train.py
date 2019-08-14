@@ -287,7 +287,7 @@ def load_experiment_params(exp_params_path):
 
 def print_experiment_params(exp_id, exp_params):
     print(f'Experiment {exp_id}:')
-    print(f'valid: {exp_params.valid_freq}')
+    print(f'valid: {exp_params.val_freq}')
     print(f'lr:    {exp_params.learning_rate:.8f}')
     print(f'm:     {exp_params.momentum:.8f}')
     print(f'wd:    {exp_params.weight_decay:.8f}')
