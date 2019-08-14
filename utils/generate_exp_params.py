@@ -1,10 +1,19 @@
 import argparse
 import numpy as np
 
+
+def log10uniform(min, max, size):
+    min_e = int(np.log10(min))
+    max_e = int(np.log10(max))
+    bases = np.random.uniform(1, 10, size)
+    exponents = np.random.randint(min_e, max_e, size)
+    return [ b * 10. ** e for b, e in zip(bases, exponents)]
+
+
 def main(num_exp, save_path):
-    lrs = np.random.uniform(1e-8, 2, num_exp)
+    lrs = log10uniform(1e-8, 10, num_exp)
     momentums = np.random.uniform(0.1, 0.9, num_exp)
-    wds = np.random.uniform(1e-8, 1e-1, num_exp)
+    wds = log10uniform(1e-8, 1e-1, num_exp)
 
     params = np.stack([lrs, momentums, wds], axis=1)
     np.save(save_path, params)

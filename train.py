@@ -216,7 +216,7 @@ def main():
         except AttributeError:
             model_dict = model.state_dict()
         pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-        print("load pretrain model")
+        print("Load pretrain model")
         model_dict.update(pretrained_dict)
         model.load_state_dict(model_dict)
     
