@@ -234,10 +234,13 @@ def main():
     best_loss = 1e6
     best_valid = dict(top1_acc=0., top5_acc=0., epoch=0)
     no_loss_decrease_count = 0
+
     for epoch in range(params.epoch_num):
         train_top1_acc, train_top5_acc, train_loss = train(model, train_dataloader, epoch, criterion, optimizer, writer)
+
         if epoch+1 % params.val_freq == 0:
             val_top1_acc, val_top5_acc, val_loss = validation(model, val_dataloader, epoch, criterion, writer)
+
             if val_top1_acc > best_valid['top1_acc']:
                 best_valid['top1_acc'] = val_top1_acc
                 best_valid['top5_acc'] = val_top5_acc
@@ -261,8 +264,10 @@ def main():
             torch.save(model.module.state_dict(), checkpoint)
 
     print(f'Best Validated model was found on epoch {best_valid["epoch"]}:  Top1 acc: {best_valid["top1_acc"]}  Top5 acc: {best_valid["top5_acc"]}')
+    write_exp_log(f'Best model found on epoch {best_valid["epoch"]}:  Top1 acc: {best_valid["top1_acc"]}  Top5 acc: {best_valid["top5_acc"]}')
 
     writer.close()
+
 
 def get_experiment_idx(trackbook_path):
     return 0 if not os.path.exists(trackbook_path) else int(open(trackbook_path, 'r').readline())
@@ -282,9 +287,10 @@ def load_experiment_params(exp_params_path):
 
 def print_experiment_params(exp_id, exp_params):
     print(f'Experiment {exp_id}:')
-    print(f'lr:   {exp_params.learning_rate:.8f}')
-    print(f'm:    {exp_params.momentum:.8f}')
-    print(f'wd:   {exp_params.weight_decay:.8f}')
+    print(f'valid: {exp_params.valid_freq}')
+    print(f'lr:    {exp_params.learning_rate:.8f}')
+    print(f'm:     {exp_params.momentum:.8f}')
+    print(f'wd:    {exp_params.weight_decay:.8f}')
 
 
 def write_exp_log(msg):
