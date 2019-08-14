@@ -238,6 +238,7 @@ def main():
     for epoch in range(params.epoch_num):
         train_top1_acc, train_top5_acc, train_loss = train(model, train_dataloader, epoch, criterion, optimizer, writer)
 
+        print(f'>>> Validation decision: {epoch+1 % params.val_freq} <<<')
         if epoch+1 % params.val_freq == 0:
             val_top1_acc, val_top5_acc, val_loss = validation(model, val_dataloader, epoch, criterion, writer)
 
